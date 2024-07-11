@@ -3,6 +3,7 @@ import re
 from typing import List
 from .utils.replace_tokens import replace_tokens
 import folder_paths
+from folder_paths import get_output_directory
 from comfy.sd import load_lora_for_models
 from comfy.utils import load_torch_file
 import hashlib
@@ -38,6 +39,42 @@ class ClipTextEncodeBC:
         cond_n, pooled_n = clip.encode_from_tokens(tokens_n, return_pooled=True)
         return (
             [[cond_p, {"pooled_output": pooled_p}]],
+            [[cond_n, {"pooled_output": pooled_n}]],
+        )
+
+
+# 同时带有两个正向及一个反向提示词输入框的ClipTextEncode节点
+class ClipTextEncodeBCA:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "clip": ("CLIP",),
+                "positiveA": ("STRING", {"multiline": True, "dynamicPrompts": True, }),
+                "positiveB": ("STRING", {"multiline": True, "dynamicPrompts": True, }),
+                "negative": ("STRING", {"multiline": True, "dynamicPrompts": True, }),
+            },
+        }
+
+    RETURN_TYPES = ('CONDITIONING', 'CONDITIONING', 'CONDITIONING',)
+    RETURN_NAMES = ('CONDITIONING_PA', 'CONDITIONING_PB', 'CONDITIONING_N',)
+    FUNCTION = "encode"
+
+    CATEGORY = "🚀 BCE Nodes/conditioning"
+
+    def encode(self, clip, positiveA, positiveB, negative,):
+        tokens_pa = clip.tokenize(positiveA)
+        cond_pa, pooled_pa = clip.encode_from_tokens(tokens_pa, return_pooled=True)
+        tokens_pb = clip.tokenize(positiveB)
+        cond_pb, pooled_pb = clip.encode_from_tokens(tokens_pb, return_pooled=True)
+        tokens_n = clip.tokenize(negative)
+        cond_n, pooled_n = clip.encode_from_tokens(tokens_n, return_pooled=True)
+        return (
+            [[cond_pa, {"pooled_output": pooled_pa}]],
+            [[cond_pb, {"pooled_output": pooled_pb}]],
             [[cond_n, {"pooled_output": pooled_n}]],
         )
 
