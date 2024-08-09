@@ -3,6 +3,7 @@ from .BCE_nodes import ClipTextEncodeBCA
 from .BCE_nodes import SaveAnyText
 from .BCE_nodes import SimpleText
 from .BCE_nodes import LoraWithTriggerWord
+from .BCE_nodes import FluxEmptyLatentSize
 
 NODE_CLASS_MAPPINGS = {
     "ClipTextEncodeBC": ClipTextEncodeBC,
@@ -10,6 +11,7 @@ NODE_CLASS_MAPPINGS = {
     "SaveAnyText": SaveAnyText,
     "SimpleText": SimpleText,
     "LoraWithTriggerWord": LoraWithTriggerWord,
+    "FluxEmptyLatentSize": FluxEmptyLatentSize,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -18,6 +20,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SaveAnyText": "🚀 Save Any Text (BCE)",
     "SimpleText": "🚀 Simple Text (BCE)",
     "LoraWithTriggerWord": "🚀 Lora With Trigger Word (BCE)",
+    "FluxEmptyLatentSize": "🚀 Flux Empty Latent Size (BCE)",
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']

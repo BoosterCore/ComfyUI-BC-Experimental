@@ -1,4 +1,7 @@
 import os
+import json
+import torch
+import comfy
 import re
 from typing import List
 from .utils.replace_tokens import replace_tokens
@@ -8,7 +11,6 @@ from comfy.sd import load_lora_for_models
 from comfy.utils import load_torch_file
 import hashlib
 import requests
-import json
 
 
 # 同时带有正反向提示词输入框的ClipTextEncode节点
@@ -333,7 +335,7 @@ class LoraWithTriggerWord:
                     if print_tags:
                         print("trainedWords:", output_tags)
             else:
-                print("No informations found.")
+                print("No information found.")
                 if lora_tags is None:
                     lora_tags = {}
                 lora_tags[lora_name] = []
@@ -358,4 +360,65 @@ class LoraWithTriggerWord:
                 output_tags = opt_prompt + ", " + output_tags
             else:
                 output_tags = opt_prompt
-        return (model_lora, clip_lora, output_tags,)
+        return (model_lora, clip_lora, output_tags)
+
+
+# 适配Flux模型的画布分辨率节点
+class FluxEmptyLatentSize:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        cls.size_sizes, cls.size_dict = cls.read_sizes()  # cls.read_sizes()
+        return {
+            'required': {
+                'size_selected': (cls.size_sizes,),
+                'multiply_factor': ("INT", {"default": 1, "min": 1}),  # multiple
+                'manual_width': ("INT", {
+                    "default": 0,  # default
+                    "min": 0,  # min
+                    }),
+                'manual_height': ("INT", {
+                    "default": 0,  # default
+                    "min": 0,  # min
+                    }),
+                'batch_size': ("INT", {
+                    "default": 1, "min": 1, "max": 4096
+                    })
+            }
+        }
+
+    RETURN_TYPES = ("LATENT", "INT", "INT")
+    RETURN_NAMES = ("LATENT", "width", "height")
+    FUNCTION = "return_res"
+    OUTPUT_NODE = True
+    CATEGORY = "🚀 BCE Nodes/latent"
+
+    def return_res(self, size_selected, multiply_factor, manual_width, manual_height, batch_size):
+        print(f"size_selected: {size_selected}, multiply_factor: {multiply_factor}, "
+              f"manual_width: {manual_width}, manual_height: {manual_height}")
+
+        # Initialize width and height from the manual input if provided
+        if manual_width > 0 and manual_height > 0:
+            width = manual_width * multiply_factor
+            height = manual_height * multiply_factor
+            latent = torch.ones([batch_size, 16, height // 8, width // 8], device='cpu') * 0.0609  # batch_size = 1
+            return {"samples": latent}, {"width": width}, {"height": height}
+        else:
+            # Extract resolution name and dimensions using the key
+            selected_info = self.size_dict[size_selected]
+            width = selected_info["width"] * multiply_factor
+            height = selected_info["height"] * multiply_factor
+            latent = torch.ones([batch_size, 16, height // 8, width // 8], device='cpu') * 0.0609  # batch_size = 1
+            return {"samples": latent}, {"width": width}, {"height": height}
+
+    @staticmethod
+    def read_sizes():
+        p = os.path.dirname(os.path.realpath(__file__))
+        file_path = os.path.join(p, 'flux_latent_sizes.json')
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+            size_sizes = [f"{key} - {value['name']}" for key, value in data['sizes'].items()]
+            size_dict = {f"{key} - {value['name']}": value for key, value in data['sizes'].items()}
+        return size_sizes, size_dict
