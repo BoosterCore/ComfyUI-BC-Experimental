@@ -404,14 +404,14 @@ class FluxEmptyLatentSize:
             width = manual_width * multiply_factor
             height = manual_height * multiply_factor
             latent = torch.ones([batch_size, 16, height // 8, width // 8], device='cpu') * 0.0609  # batch_size = 1
-            return {"samples": latent}, {"width": width}, {"height": height}
+            return {"samples": latent}, width, height
         else:
             # Extract resolution name and dimensions using the key
             selected_info = self.size_dict[size_selected]
             width = selected_info["width"] * multiply_factor
             height = selected_info["height"] * multiply_factor
             latent = torch.ones([batch_size, 16, height // 8, width // 8], device='cpu') * 0.0609  # batch_size = 1
-            return {"samples": latent}, {"width": width}, {"height": height}
+            return {"samples": latent}, width, height
 
     @staticmethod
     def read_sizes():
